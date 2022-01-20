@@ -9,8 +9,9 @@ import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
 
-class SymmetricEncryptor {
-
+class SymmetricEncryptor(
+    val defaultIV: Boolean = false
+) {
     private lateinit var iV: ByteArray
 
     companion object {
@@ -44,6 +45,11 @@ class SymmetricEncryptor {
         return iV
     }
 
+    /**
+     * Generates a secret key for encrypt and decrypt
+     *
+     * I can't think of a reason to use this, when the key is just stored in memory only
+     */
     fun generateKey(): SecretKey? {
         try {
             val keygen = KeyGenerator.getInstance(AES_ALGORITHM)
@@ -61,7 +67,6 @@ class SymmetricEncryptor {
      * @param password used to generated key
      * @return SHA256 of the password
      */
-
     fun generateSecretKeySpec(password: String): SecretKeySpec? {
         try {
             val digest = MessageDigest.getInstance(HASH_ALGORITHM)
@@ -78,8 +83,13 @@ class SymmetricEncryptor {
     fun encrypt(plainText: ByteArray, secretKey: SecretKey): ByteArray? {
         try {
             val cipher = Cipher.getInstance(CIPHER_TYPE)
-            cipher.init(Cipher.ENCRYPT_MODE, secretKey)
-            iV = cipher.iv
+            if (defaultIV) {
+                val ivSpec = IvParameterSpec(ivBytes)
+                cipher.init(Cipher.ENCRYPT_MODE, secretKey, ivSpec)
+            } else {
+                cipher.init(Cipher.ENCRYPT_MODE, secretKey)
+                iV = cipher.iv
+            }
             return cipher.doFinal(plainText)
         } catch (e: Exception) {
             if (BuildConfig.DEBUG) e.printStackTrace()
@@ -87,10 +97,14 @@ class SymmetricEncryptor {
         return null
     }
 
-    fun decrypt(cipherText: ByteArray, IV: ByteArray, secretKey: SecretKey): ByteArray? {
+    fun decrypt(cipherText: ByteArray, secretKey: SecretKey, IV: ByteArray? = ivBytes): ByteArray? {
         try {
             val cipher = Cipher.getInstance(CIPHER_TYPE)
-            val ivSpec = IvParameterSpec(IV)
+            val ivSpec = if (defaultIV) {
+                IvParameterSpec(ivBytes)
+            } else {
+                IvParameterSpec(IV)
+            }
             cipher.init(Cipher.DECRYPT_MODE, secretKey, ivSpec)
             return cipher.doFinal(cipherText)
         } catch (e: Exception) {

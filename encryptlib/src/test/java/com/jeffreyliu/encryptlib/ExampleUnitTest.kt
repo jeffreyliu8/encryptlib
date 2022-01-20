@@ -30,7 +30,29 @@ class ExampleUnitTest {
 
         val se2 = SymmetricEncryptor()
         val decryptedByteArray =
-            se2.decrypt(encryptedByteArray!!, iv, secretKey)
+            se2.decrypt(encryptedByteArray!!, secretKey, iv)
+        assertNotNull(decryptedByteArray)
+
+        println("encryptedByteArray is $encryptedByteArray")
+        println("decryptedByteArray is $decryptedByteArray")
+        assert(pin.toByteArray().contentEquals(decryptedByteArray))
+    }
+
+    @Test
+    fun testEncDefaultIV() {
+        val password = "jeffrey"
+        val pin = "text to be encrypted"
+        val se = SymmetricEncryptor(defaultIV = true)
+        val secretKey = se.generateSecretKeySpec(password)
+        assertNotNull(secretKey)
+
+        val encryptedByteArray = se.encrypt(pin.toByteArray(), secretKey!!)
+        assertNotNull(encryptedByteArray)
+
+
+        val se2 = SymmetricEncryptor()
+        val decryptedByteArray =
+            se2.decrypt(encryptedByteArray!!, secretKey)
         assertNotNull(decryptedByteArray)
 
         println("encryptedByteArray is $encryptedByteArray")
