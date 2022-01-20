@@ -28,7 +28,7 @@ class ExampleInstrumentedTest {
     fun testEnc() {
         val alias = "my alias"
         val pin = "text to be encrypted"
-        val se = SymmetricEncryptor()
+        val se = AndroidKeyStoreSymmetricEncryptor()
         assert(se.generateKey(alias))
 
         val encryptedByteArray = se.encrypt(alias, pin.toByteArray())
@@ -36,7 +36,7 @@ class ExampleInstrumentedTest {
         val encryptedString = Base64.encodeToString(encryptedByteArray, Base64.DEFAULT)
         val iv = se.getIV()
 
-        val se2 = SymmetricEncryptor()
+        val se2 = AndroidKeyStoreSymmetricEncryptor()
         val decryptedByteArray =
             se2.decrypt(alias, encryptedByteArray!!, iv)
         assertNotNull(decryptedByteArray)

@@ -1,68 +1,82 @@
 package com.jeffreyliu.encryptlib
 
-import android.security.keystore.KeyGenParameterSpec
-import android.security.keystore.KeyProperties
 import java.lang.Exception
-import java.security.KeyStore
+import java.security.MessageDigest
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
+import javax.crypto.SecretKey
 import javax.crypto.spec.IvParameterSpec
+import javax.crypto.spec.SecretKeySpec
 
 
 class SymmetricEncryptor {
-    private lateinit var keyStore: KeyStore
+
     private lateinit var iV: ByteArray
 
     companion object {
-        private const val CIPHER_TYPE =
-            "${KeyProperties.KEY_ALGORITHM_AES}/${KeyProperties.BLOCK_MODE_CBC}/${KeyProperties.ENCRYPTION_PADDING_PKCS7}"
-        private const val ANDROID_KEY_PROVIDER = "AndroidKeyStore"
+        private const val AES_ALGORITHM = "AES"
+        private const val CIPHER_TYPE = "$AES_ALGORITHM/CBC/PKCS5PADDING"
+        private const val AES_KEY_SIZE = 256
+        private const val HASH_ALGORITHM = "SHA-256"
+
+        private val ivBytes = byteArrayOf(
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00
+        )
     }
 
-    init {
-        try {
-            keyStore = KeyStore.getInstance(ANDROID_KEY_PROVIDER)
-            keyStore.load(null)
-        } catch (e: Exception) {
-            if (BuildConfig.DEBUG) e.printStackTrace()
-        }
-    }
 
     fun getIV(): ByteArray {
         return iV
     }
 
-    fun generateKey(alias: String): Boolean {
+    fun generateKey(): SecretKey? {
         try {
-            if (keyStore.containsAlias(alias)) {
-                return true
-            } else {
-                val keygen =
-                    KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, ANDROID_KEY_PROVIDER)
-                keygen.init(
-                    KeyGenParameterSpec.Builder(
-                        alias,
-                        KeyProperties.PURPOSE_ENCRYPT
-                                or KeyProperties.PURPOSE_DECRYPT
-                    )
-                        .setBlockModes(KeyProperties.BLOCK_MODE_CBC)
-                        .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_PKCS7)
-                        .setKeySize(256)
-                        .setUserAuthenticationRequired(false)
-                        .build()
-                )
-                keygen.generateKey()
-                return true
-            }
+            val keygen = KeyGenerator.getInstance(AES_ALGORITHM)
+            keygen.init(AES_KEY_SIZE)
+            return keygen.generateKey()
         } catch (e: Exception) {
             if (BuildConfig.DEBUG) e.printStackTrace()
         }
-        return false
+        return null
     }
 
-    fun encrypt(alias: String, plainText: ByteArray): ByteArray? {
+    /**
+     * Generates SHA256 hash of the password which is used as key
+     *
+     * @param password used to generated key
+     * @return SHA256 of the password
+     */
+
+    fun generateSecretKeySpec(password: String): SecretKeySpec? {
         try {
-            val secretKey = keyStore.getKey(alias, null)
+            val digest = MessageDigest.getInstance(HASH_ALGORITHM)
+            val bytes = password.toByteArray()
+            digest.update(bytes, 0, bytes.size)
+            val key = digest.digest()
+            return SecretKeySpec(key, AES_ALGORITHM)
+        } catch (e: Exception) {
+            if (BuildConfig.DEBUG) e.printStackTrace()
+        }
+        return null
+    }
+
+    fun encrypt(plainText: ByteArray, secretKey: SecretKey): ByteArray? {
+        try {
             val cipher = Cipher.getInstance(CIPHER_TYPE)
             cipher.init(Cipher.ENCRYPT_MODE, secretKey)
             iV = cipher.iv
@@ -73,9 +87,8 @@ class SymmetricEncryptor {
         return null
     }
 
-    fun decrypt(alias: String, cipherText: ByteArray, IV: ByteArray): ByteArray? {
+    fun decrypt(cipherText: ByteArray, IV: ByteArray, secretKey: SecretKey): ByteArray? {
         try {
-            val secretKey = keyStore.getKey(alias, null)
             val cipher = Cipher.getInstance(CIPHER_TYPE)
             val ivSpec = IvParameterSpec(IV)
             cipher.init(Cipher.DECRYPT_MODE, secretKey, ivSpec)

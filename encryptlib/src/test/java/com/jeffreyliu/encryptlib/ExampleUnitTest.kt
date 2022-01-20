@@ -1,7 +1,5 @@
 package com.jeffreyliu.encryptlib
 
-import android.util.Base64
-import android.util.Log
 import org.junit.Test
 
 import org.junit.Assert.*
@@ -19,23 +17,24 @@ class ExampleUnitTest {
 
     @Test
     fun testEnc() {
-        val alias = "my alias"
+        val password = "jeffrey"
         val pin = "text to be encrypted"
         val se = SymmetricEncryptor()
-        assert(se.generateKey(alias))
+        val secretKey = se.generateSecretKeySpec(password)
+        assertNotNull(secretKey)
 
-        val encryptedByteArray = se.encrypt(alias, pin.toByteArray())
+        val encryptedByteArray = se.encrypt(pin.toByteArray(), secretKey!!)
         assertNotNull(encryptedByteArray)
-        val encryptedString = Base64.encodeToString(encryptedByteArray, Base64.DEFAULT)
+
         val iv = se.getIV()
 
         val se2 = SymmetricEncryptor()
         val decryptedByteArray =
-            se2.decrypt(alias, encryptedByteArray!!, iv)
+            se2.decrypt(encryptedByteArray!!, iv, secretKey)
         assertNotNull(decryptedByteArray)
-        val decryptedString = decryptedByteArray?.decodeToString()
-        Log.d("jeff", "encryptedString is $encryptedString")
-        Log.d("jeff", "decryptedString is $decryptedString")
-        assertEquals(pin, decryptedString)
+
+        println("encryptedByteArray is $encryptedByteArray")
+        println("decryptedByteArray is $decryptedByteArray")
+        assert(pin.toByteArray().contentEquals(decryptedByteArray))
     }
 }
