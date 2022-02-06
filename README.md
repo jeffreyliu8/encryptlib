@@ -23,7 +23,7 @@ encryption lib for android api level 23 or above
 ##### Dependencies
 ```groovy
 	dependencies {
-		implementation 'com.github.jeffreyliu8.encryptlib:release:0.0.5'
+		implementation 'com.github.jeffreyliu8.encryptlib:release:0.0.6'
 	}
 ```
 
