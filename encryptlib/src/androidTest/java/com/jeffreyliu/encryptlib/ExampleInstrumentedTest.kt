@@ -26,6 +26,7 @@ class ExampleInstrumentedTest {
 
     @Test
     fun testEnc() {
+        // NOTE: this test will fail for api level lower than 23
         val alias = "my alias"
         val pin = "text to be encrypted"
         val se = AndroidKeyStoreSymmetricEncryptor()

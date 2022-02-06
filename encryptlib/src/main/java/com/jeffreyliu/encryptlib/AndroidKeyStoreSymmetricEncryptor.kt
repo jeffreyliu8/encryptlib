@@ -1,7 +1,9 @@
 package com.jeffreyliu.encryptlib
 
+import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
+import androidx.annotation.RequiresApi
 import java.lang.Exception
 import java.security.KeyStore
 import javax.crypto.Cipher
@@ -14,6 +16,7 @@ class AndroidKeyStoreSymmetricEncryptor {
     private lateinit var iV: ByteArray
 
     companion object {
+        @RequiresApi(Build.VERSION_CODES.M)
         private const val CIPHER_TYPE =
             "${KeyProperties.KEY_ALGORITHM_AES}/${KeyProperties.BLOCK_MODE_CBC}/${KeyProperties.ENCRYPTION_PADDING_PKCS7}"
         private const val ANDROID_KEY_PROVIDER = "AndroidKeyStore"
@@ -32,7 +35,14 @@ class AndroidKeyStoreSymmetricEncryptor {
         return iV
     }
 
+    /**
+     * Returns true if key is generated successfully, api level lower than 23 will return false
+     */
+    @RequiresApi(Build.VERSION_CODES.M)
     fun generateKey(alias: String): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            return false
+        }
         try {
             if (keyStore.containsAlias(alias)) {
                 return true
@@ -60,7 +70,14 @@ class AndroidKeyStoreSymmetricEncryptor {
         return false
     }
 
+    /**
+     * api level lower than 23 will return null
+     */
+    @RequiresApi(Build.VERSION_CODES.M)
     fun encrypt(alias: String, plainText: ByteArray): ByteArray? {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            return null
+        }
         try {
             val secretKey = keyStore.getKey(alias, null)
             val cipher = Cipher.getInstance(CIPHER_TYPE)
@@ -73,7 +90,14 @@ class AndroidKeyStoreSymmetricEncryptor {
         return null
     }
 
+    /**
+     * api level lower than 23 will return null
+     */
+    @RequiresApi(Build.VERSION_CODES.M)
     fun decrypt(alias: String, cipherText: ByteArray, IV: ByteArray): ByteArray? {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            return null
+        }
         try {
             val secretKey = keyStore.getKey(alias, null)
             val cipher = Cipher.getInstance(CIPHER_TYPE)
